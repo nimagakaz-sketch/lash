@@ -1,0 +1,152 @@
+{
+  "studio_name": "Алина • Lash & Brow Studio",
+  "tagline": "Бережное наращивание за 1.5 часа • Центр Кемерово",
+  "avatar_url": "https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?w=400&q=80",
+  "theme": {
+    "primary_color": "#D946EF",
+    "accent_color": "#8B5CF6",
+    "gradient_start": "#d946ef",
+    "gradient_end": "#8b5cf6",
+    "card_bg": "rgba(30, 24, 40, 0.72)",
+    "glass_border": "rgba(255, 255, 255, 0.12)"
+  },
+  "admin_ids": [6573422629],
+  "address": "г. Кемерово, пр. Советский, 25, офис 304",
+  "address_hint": "Вход со двора через арку, 3 этаж, домофон 304",
+  "instagram_or_channel": "https://t.me/youngyannniii",
+  "phone": "+7 (999) 123-45-67",
+  "work_schedule": {
+    "start": "09:00",
+    "end": "21:00",
+    "step_minutes": 30,
+    "break_start": "13:30",
+    "break_end": "14:00"
+  },
+  "categories": [
+    "Все",
+    "Ресницы",
+    "Брови",
+    "Комплексы",
+    "Снятие и уход"
+  ],
+  "services": [
+    {
+      "id": "lash-classic",
+      "category": "Ресницы",
+      "title": "Классическое наращивание 1D",
+      "price": 2200,
+      "duration_minutes": 90,
+      "description": "Поресничное наращивание на каждую свою ресничку. Идеально натуральный взгляд на каждый день, невесомая толщина 0.07-0.10 мм.",
+      "is_popular": false,
+      "badge": ""
+    },
+    {
+      "id": "lash-2d",
+      "category": "Ресницы",
+      "title": "Объёмное наращивание 2D",
+      "price": 2600,
+      "duration_minutes": 105,
+      "description": "Бархатный выразительный взгляд без утяжеления родных ресниц. Самый любимый выбор наших постоянных клиентов.",
+      "is_popular": true,
+      "badge": "Хит"
+    },
+    {
+      "id": "lash-3d",
+      "category": "Ресницы",
+      "title": "Объёмное наращивание 3D / Мокрый эффект",
+      "price": 3000,
+      "duration_minutes": 120,
+      "description": "Трендовый мокрый эффект, лучики (эффект Кайли) или пушистый бархатный 3D объём. Стойкость до 6 недель.",
+      "is_popular": true,
+      "badge": "Тренд"
+    },
+    {
+      "id": "lash-lamination",
+      "category": "Ресницы",
+      "title": "Ламинирование + Ботокс ресниц",
+      "price": 2000,
+      "duration_minutes": 60,
+      "description": "Эстетичный изгиб, глубокое питание кератином и стойкое окрашивание своих натуральных ресниц.",
+      "is_popular": false,
+      "badge": ""
+    },
+    {
+      "id": "brow-complex",
+      "category": "Брови",
+      "title": "Архитектура + Окрашивание бровей",
+      "price": 1400,
+      "duration_minutes": 45,
+      "description": "Индивидуальный подбор формы под пропорции лица, бережная коррекция воском/пинцетом и стойкое окрашивание хной/краской.",
+      "is_popular": true,
+      "badge": "Хит"
+    },
+    {
+      "id": "brow-lamination",
+      "category": "Брови",
+      "title": "Долговременная укладка бровей (ДУ)",
+      "price": 1900,
+      "duration_minutes": 50,
+      "description": "Укладка непослушных волосков, визуальный объём и идеальная фиксация формы до 1.5 месяцев.",
+      "is_popular": false,
+      "badge": ""
+    },
+    {
+      "id": "combo-lash-brow",
+      "category": "Комплексы",
+      "title": "Сет «Взгляд на миллион»: 2D + Брови",
+      "price": 3600,
+      "duration_minutes": 135,
+      "description": "Полный бьюти-апгрейд за один визит: наращивание 2D + оформление и окрашивание бровей со скидкой 400 ₽.",
+      "is_popular": true,
+      "badge": "Выгода"
+    },
+    {
+      "id": "removal-care",
+      "category": "Снятие и уход",
+      "title": "Бережное снятие + спа-уход для ресниц",
+      "price": 500,
+      "duration_minutes": 30,
+      "description": "Мягкое растворение крем-ремувером без жжения, плюс нанесение питательной сыворотки.",
+      "is_popular": false,
+      "badge": ""
+    }
+  ],
+  "portfolio_photos": [
+    {
+      "id": "p1",
+      "title": "Мокрый эффект 2D-3D",
+      "service": "Ресницы",
+      "url": "https://images.unsplash.com/photo-1583001809873-a128495da465?w=800&q=80"
+    },
+    {
+      "id": "p2",
+      "title": "Натуральная классика 1D",
+      "service": "Ресницы",
+      "url": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&q=80"
+    },
+    {
+      "id": "p3",
+      "title": "Ламинирование + ботокс",
+      "service": "Ресницы",
+      "url": "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=800&q=80"
+    },
+    {
+      "id": "p4",
+      "title": "Архитектура и окрашивание бровей",
+      "service": "Брови",
+      "url": "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&q=80"
+    },
+    {
+      "id": "p5",
+      "title": "Эффект Кайли (лучики)",
+      "service": "Ресницы",
+      "url": "https://images.unsplash.com/photo-1500840216050-6ffa99d75160?w=800&q=80"
+    },
+    {
+      "id": "p6",
+      "title": "Комплекс 2D + Брови",
+      "service": "Комплексы",
+      "url": "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=800&q=80"
+    }
+  ]
+}

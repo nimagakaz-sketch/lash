@@ -1,0 +1,13 @@
+venv/
+__pycache__/
+*.pyc
+beauty.db
+.DS_Store
+.env
+.env
+*.session
+*.session-journal
+__pycache__/
+venv/
+*.sqlite3
+.DS_Store
