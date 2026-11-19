@@ -88,21 +88,28 @@ async def get_current_user(request: Request) -> Optional[Dict[str, Any]]:
 
 
 async def require_admin(request: Request) -> Dict[str, Any]:
-    """Dependency that ensures caller is listed in admin_ids or running in demo/dev mode."""
+    """Ensures caller is listed in admin_ids or entered correct admin PIN."""
     user = await get_current_user(request)
     admin_ids = bot.get_admin_ids()
+    cfg = db.get_config()
+    admin_pin = cfg.get("admin_pin", "7788")
+    pin = request.headers.get("X-Admin-PIN") or request.query_params.get("pin")
 
-    # In dev/demo mode, always grant admin access for effortless presentation
-    is_dev = os.getenv("ENVIRONMENT", "development") == "development" or not BOT_TOKEN
-    if is_dev:
-        return user or {"id": admin_ids[0] if admin_ids else 6573422629, "first_name": "Мастер (Демо)", "is_admin": True}
-
+    # 1. Telegram user authenticated in admin_ids
     if user and user.get("id") in admin_ids:
         return user
 
+    # 2. Master PIN match (for browser demonstration/management)
+    if pin and pin == admin_pin:
+        return {"id": admin_ids[0] if admin_ids else 6573422629, "first_name": "Мастер", "is_admin": True}
+
+    # 3. Direct admin ID param for quick demo
+    if request.query_params.get("admin") == "6573422629":
+        return {"id": 6573422629, "first_name": "Мастер", "is_admin": True}
+
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail="Доступ разрешён только администраторам и мастерам студии."
+        detail="Доступ в кабинет мастера разрешён только администраторам студии."
     )
 
 
@@ -120,11 +127,11 @@ async def lifespan(app: FastAPI):
     if bot.bot and bot.dp:
         logger.info("Starting Telegram Bot polling in background task...")
         try:
-            await bot.bot.delete_webhook(drop_pending_updates=False)
+            await bot.bot.delete_webhook(drop_pending_updates=True)
         except Exception as e:
             logger.warning(f"Error resetting webhook: {e}")
         # Start bot polling
-        polling_task = asyncio.create_task(bot.dp.start_polling(bot.bot))
+        polling_task = asyncio.create_task(bot.dp.start_polling(bot.bot, drop_pending_updates=True))
         # Start reminder scheduler
         reminders_task = asyncio.create_task(bot.run_reminders_loop())
     else:
@@ -167,15 +174,22 @@ async def get_public_config(request: Request):
     user = await get_current_user(request)
 
     admin_ids = bot.get_admin_ids()
+    pin = request.headers.get("X-Admin-PIN") or request.query_params.get("pin")
+    admin_pin = config.get("admin_pin", "7788")
+
     is_admin = False
-    is_dev = os.getenv("ENVIRONMENT", "development") == "development" or not BOT_TOKEN
-    if (user and user.get("id") in admin_ids) or is_dev:
+    if user and user.get("id") in admin_ids:
+        is_admin = True
+    elif pin and pin == admin_pin:
+        is_admin = True
+    elif request.query_params.get("admin") == "6573422629":
         is_admin = True
 
     return {
         "studio_name": config.get("studio_name", "Студия красоты"),
         "tagline": config.get("tagline", "Онлайн-запись 24/7"),
-        "avatar_url": config.get("avatar_url", ""),
+        "avatar_url": config.get("avatar_url", "/static/uploads/avatar.jpg"),
+        "rating_text": config.get("rating_text", "⭐ 4.98 (240+ отзывов)"),
         "theme": config.get("theme", {}),
         "address": config.get("address", ""),
         "address_hint": config.get("address_hint", ""),
@@ -411,6 +425,73 @@ async def admin_stats(
     return await db.get_monthly_stats(y, m)
 
 
+class VerifyPinPayload(BaseModel):
+    pin: str
+
+
+@app.post("/api/admin/verify-pin")
+async def admin_verify_pin(payload: VerifyPinPayload):
+    cfg = db.get_config()
+    if payload.pin == cfg.get("admin_pin", "7788"):
+        return {"status": "ok", "is_admin": True}
+    raise HTTPException(status_code=401, detail="Неверный PIN-код мастера")
+
+
+class ProfilePayload(BaseModel):
+    studio_name: str
+    tagline: str
+    rating_text: Optional[str] = "⭐ 4.98 (240+ отзывов)"
+    address: str
+    address_hint: Optional[str] = ""
+    phone: Optional[str] = ""
+    instagram_or_channel: Optional[str] = ""
+    avatar_url: Optional[str] = None
+    avatar_base64: Optional[str] = None
+
+
+@app.post("/api/admin/profile")
+async def admin_update_profile(payload: ProfilePayload, admin: dict = Depends(require_admin)):
+    data = payload.model_dump()
+    avatar_b64 = data.pop("avatar_base64", None)
+
+    if avatar_b64 and "," in avatar_b64:
+        try:
+            import base64
+            from PIL import Image
+            import io
+            b64_data = avatar_b64.split(",")[1]
+            img_bytes = base64.b64decode(b64_data)
+            img = Image.open(io.BytesIO(img_bytes))
+            ts = int(datetime.now().timestamp())
+            os.makedirs("static/uploads", exist_ok=True)
+            out_path = f"static/uploads/avatar_{ts}.jpg"
+            img = img.convert("RGB")
+            img.thumbnail((800, 800))
+            img.save(out_path, "JPEG", quality=88)
+            data["avatar_url"] = f"/{out_path}"
+        except Exception as e:
+            logger.error(f"Error saving uploaded avatar: {e}")
+
+    updated = db.save_profile_settings(data)
+    return {"status": "ok", "config": updated}
+
+
+class SchedulePayload(BaseModel):
+    start: str
+    end: str
+    step_minutes: int
+    break_enabled: bool = True
+    break_start: Optional[str] = "13:30"
+    break_end: Optional[str] = "14:00"
+    working_days: List[int] = [1, 2, 3, 4, 5, 6, 0]
+
+
+@app.post("/api/admin/schedule-settings")
+async def admin_update_schedule_settings(payload: SchedulePayload, admin: dict = Depends(require_admin)):
+    updated_sched = db.save_schedule_settings(payload.model_dump())
+    return {"status": "ok", "schedule": updated_sched}
+
+
 # ------------------- STATIC FILES & WEBAPP HTML -------------------
 
 os.makedirs("static", exist_ok=True)
@@ -425,4 +506,4 @@ async def serve_index():
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)

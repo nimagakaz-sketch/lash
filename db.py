@@ -26,6 +26,37 @@ def get_config() -> dict:
     return {}
 
 
+def save_config(new_config: dict) -> bool:
+    config_path = os.getenv("CONFIG_PATH", "beauty_config.json")
+    try:
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(new_config, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        logger.error(f"Error saving config: {e}")
+        return False
+
+
+def save_profile_settings(profile_data: dict) -> dict:
+    cfg = get_config()
+    for field in ("studio_name", "tagline", "rating_text", "address", "address_hint", "phone", "instagram_or_channel", "avatar_url"):
+        if field in profile_data:
+            cfg[field] = profile_data[field]
+    save_config(cfg)
+    return cfg
+
+
+def save_schedule_settings(schedule_data: dict) -> dict:
+    cfg = get_config()
+    curr_sched = cfg.get("work_schedule", {})
+    for field in ("start", "end", "step_minutes", "break_enabled", "break_start", "break_end", "working_days"):
+        if field in schedule_data:
+            curr_sched[field] = schedule_data[field]
+    cfg["work_schedule"] = curr_sched
+    save_config(cfg)
+    return curr_sched
+
+
 async def init_db():
     """Initializes tables and seeds initial data from beauty_config.json if empty."""
     logger.info(f"Initializing database. Mode: {'Supabase' if USE_SUPABASE else 'SQLite'}")
@@ -402,6 +433,18 @@ def minutes_to_time(minutes: int) -> str:
 
 async def get_available_slots(date_str: str, duration_minutes: int, schedule_config: dict) -> List[Dict[str, Any]]:
     """Calculates all available start times for a given date and service duration."""
+    # 1. Check working days of week
+    try:
+        d = datetime.strptime(date_str, "%Y-%m-%d").date()
+        # In UI: 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat, 0=Sun (or 7=Sun)
+        ui_dow = 0 if d.isoweekday() == 7 else d.isoweekday()
+        working_days = schedule_config.get("working_days", [1, 2, 3, 4, 5, 6, 0])
+        # If this day of week is not in master's working days, whole day is closed
+        if (ui_dow not in working_days) and (d.isoweekday() not in working_days):
+            return []
+    except Exception as e:
+        logger.error(f"Error checking weekday: {e}")
+
     start_str = schedule_config.get("start", "09:00")
     end_str = schedule_config.get("end", "21:00")
     step = int(schedule_config.get("step_minutes", 30))
@@ -415,13 +458,16 @@ async def get_available_slots(date_str: str, duration_minutes: int, schedule_con
         if b["is_full_day"]:
             return []  # Entire day is blocked
 
-    # Check lunch break if configured
+    # Check lunch break if configured and enabled
     break_intervals = []
-    if schedule_config.get("break_start") and schedule_config.get("break_end"):
-        break_intervals.append((
-            time_to_minutes(schedule_config["break_start"]),
-            time_to_minutes(schedule_config["break_end"])
-        ))
+    if schedule_config.get("break_enabled", True):
+        b_start = schedule_config.get("break_start")
+        b_end = schedule_config.get("break_end")
+        if b_start and b_end:
+            break_intervals.append((
+                time_to_minutes(b_start),
+                time_to_minutes(b_end)
+            ))
 
     # Add specific blocked times to occupied intervals
     occupied_intervals = list(break_intervals)

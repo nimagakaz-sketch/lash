@@ -1,7 +1,9 @@
 {
   "studio_name": "Алина • Lash & Brow Studio",
   "tagline": "Бережное наращивание за 1.5 часа • Центр Кемерово",
-  "avatar_url": "https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?w=400&q=80",
+  "avatar_url": "/static/uploads/avatar.jpg",
+  "rating_text": "⭐ 4.98 (240+ отзывов)",
+  "admin_pin": "7788",
   "theme": {
     "primary_color": "#D946EF",
     "accent_color": "#8B5CF6",
@@ -10,17 +12,29 @@
     "card_bg": "rgba(30, 24, 40, 0.72)",
     "glass_border": "rgba(255, 255, 255, 0.12)"
   },
-  "admin_ids": [6573422629],
+  "admin_ids": [
+    6573422629
+  ],
   "address": "г. Кемерово, пр. Советский, 25, офис 304",
-  "address_hint": "Вход со двора через арку, 3 этаж, домофон 304",
+  "address_hint": "Вход со двора, 3 этаж",
   "instagram_or_channel": "https://t.me/youngyannniii",
-  "phone": "+7 (999) 123-45-67",
+  "phone": "+7 (999) 777-88-99",
   "work_schedule": {
     "start": "09:00",
     "end": "21:00",
     "step_minutes": 30,
-    "break_start": "13:30",
-    "break_end": "14:00"
+    "break_enabled": true,
+    "break_start": "14:00",
+    "break_end": "15:00",
+    "working_days": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      0
+    ]
   },
   "categories": [
     "Все",

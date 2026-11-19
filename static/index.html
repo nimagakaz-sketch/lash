@@ -34,9 +34,9 @@
             </div>
           </div>
           <div class="profile-badges">
-            <span class="badge-pill highlight">⭐ 4.98 (240+ отзывов)</span>
+            <span id="p-rating-badge" class="badge-pill highlight">⭐ 4.98 (240+ отзывов)</span>
             <span id="p-hours-badge" class="badge-pill">🕒 09:00 – 21:00</span>
-            <button id="btn-master-view" class="badge-pill highlight" style="cursor:pointer; border-color:var(--accent); font-weight:700;">👑 Кабинет мастера</button>
+            <button id="btn-master-view" class="badge-pill highlight" style="display:none; cursor:pointer; border-color:var(--accent); font-weight:700;">👑 Кабинет мастера</button>
             <a id="p-channel-link" href="#" target="_blank" class="badge-pill" style="display:none; text-decoration:none;">📷 Портфолио</a>
           </div>
           <div class="profile-address">
@@ -108,6 +108,8 @@
         <div class="admin-subnav">
           <button class="admin-tab-btn active" data-atab="schedule">Расписание</button>
           <button class="admin-tab-btn" data-atab="slots">Окошки / Перерывы</button>
+          <button class="admin-tab-btn" data-atab="schedule-settings">График работы</button>
+          <button class="admin-tab-btn" data-atab="profile">Шапка & Профиль</button>
           <button class="admin-tab-btn" data-atab="services">Услуги & Прайс</button>
           <button class="admin-tab-btn" data-atab="portfolio">Портфолио</button>
         </div>
@@ -140,6 +142,137 @@
           </div>
           <h4 style="font-size:14px; color:var(--text-muted); margin-bottom:8px;">Заблокированные слоты на эту дату:</h4>
           <div id="admin-blocked-list"></div>
+        </div>
+
+        <!-- Section 2.5: Schedule Settings -->
+        <div id="admin-sec-schedule-settings" style="display:none;">
+          <div class="profile-card" style="padding:16px; margin-bottom:16px;">
+            <h3 style="font-size:16px; font-weight:700; margin-bottom:6px;">Настройка расписания мастера</h3>
+            <p style="font-size:13px; color:var(--text-sub); margin-bottom:14px;">Клиенты смогут бронировать только в указанные часы и рабочие дни.</p>
+            
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <div style="display:flex; gap:10px;">
+                <div class="form-group" style="flex:1;">
+                  <label class="form-label">Начало работы</label>
+                  <input type="time" id="sched-start" class="form-input" value="09:00">
+                </div>
+                <div class="form-group" style="flex:1;">
+                  <label class="form-label">Конец работы</label>
+                  <input type="time" id="sched-end" class="form-input" value="21:00">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Шаг сетки времени записи</label>
+                <select id="sched-step" class="form-input" style="background:#281e34; color:#fff;">
+                  <option value="15">Каждые 15 минут</option>
+                  <option value="30" selected>Каждые 30 минут</option>
+                  <option value="45">Каждые 45 минут</option>
+                  <option value="60">Каждые 60 минут (1 час)</option>
+                </select>
+              </div>
+
+              <div style="border-top:1px solid rgba(255,255,255,0.08); padding-top:10px;">
+                <label class="form-checkbox-row" style="margin-bottom:10px;">
+                  <input type="checkbox" id="sched-break-enabled" checked>
+                  <span class="form-checkbox-text">Обеденный перерыв мастера</span>
+                </label>
+                <div id="sched-break-box" style="display:flex; gap:10px;">
+                  <div class="form-group" style="flex:1;">
+                    <label class="form-label">Начало перерыва</label>
+                    <input type="time" id="sched-break-start" class="form-input" value="13:30">
+                  </div>
+                  <div class="form-group" style="flex:1;">
+                    <label class="form-label">Конец перерыва</label>
+                    <input type="time" id="sched-break-end" class="form-input" value="14:00">
+                  </div>
+                </div>
+              </div>
+
+              <div style="border-top:1px solid rgba(255,255,255,0.08); padding-top:10px;">
+                <label class="form-label" style="margin-bottom:8px; display:block;">Рабочие дни недели (кликните, чтобы включить/выключить):</label>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;" id="sched-days-bar">
+                  <button type="button" class="category-chip active" data-day="1">ПН</button>
+                  <button type="button" class="category-chip active" data-day="2">ВТ</button>
+                  <button type="button" class="category-chip active" data-day="3">СР</button>
+                  <button type="button" class="category-chip active" data-day="4">ЧТ</button>
+                  <button type="button" class="category-chip active" data-day="5">ПТ</button>
+                  <button type="button" class="category-chip active" data-day="6">СБ</button>
+                  <button type="button" class="category-chip active" data-day="0">ВС</button>
+                </div>
+              </div>
+
+              <button id="btn-save-schedule" class="btn-primary-large" style="height:46px; margin-top:8px;">
+                💾 Сохранить график работы
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2.6: Profile & Header Settings -->
+        <div id="admin-sec-profile" style="display:none;">
+          <div class="profile-card" style="padding:16px; margin-bottom:16px;">
+            <h3 style="font-size:16px; font-weight:700; margin-bottom:6px;">Настройка шапки и профиля</h3>
+            <p style="font-size:13px; color:var(--text-sub); margin-bottom:14px;">Измените фото мастера, название, статус, рейтинг и адрес.</p>
+
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <div style="display:flex; gap:14px; align-items:center;">
+                <img id="admin-prof-avatar-img" src="/static/uploads/avatar.jpg" style="width:72px; height:72px; border-radius:50%; object-fit:cover; border:2px solid var(--primary); box-shadow:0 0 12px var(--primary-glow); flex-shrink:0;">
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                  <label class="btn-secondary" style="cursor:pointer; font-size:13px; padding:7px 14px; text-align:center;">
+                    📷 Загрузить фото мастера
+                    <input type="file" id="admin-avatar-file-input" accept="image/*" style="display:none;">
+                  </label>
+                  <span style="font-size:11px; color:var(--text-muted);">Или вставьте ссылку на изображение ниже</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Ссылка на фото (URL)</label>
+                <input type="text" id="admin-prof-avatar-url" class="form-input" placeholder="/static/uploads/avatar.jpg или https://...">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Имя мастера / Название студии</label>
+                <input type="text" id="admin-prof-name" class="form-input" placeholder="Алина • Lash & Brow Studio">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Короткий статус / УТП (под именем)</label>
+                <input type="text" id="admin-prof-tagline" class="form-input" placeholder="Бережное наращивание за 1.5 часа • Центр Кемерово">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Бейдж рейтинга и отзывов</label>
+                <input type="text" id="admin-prof-rating" class="form-input" placeholder="⭐ 4.98 (240+ отзывов)">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Адрес студии / кабинета</label>
+                <input type="text" id="admin-prof-address" class="form-input" placeholder="г. Кемерово, пр. Советский, 25, офис 304">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Подсказка как пройти</label>
+                <input type="text" id="admin-prof-hint" class="form-input" placeholder="Вход со двора через арку, 3 этаж, домофон 304">
+              </div>
+
+              <div style="display:flex; gap:10px;">
+                <div class="form-group" style="flex:1;">
+                  <label class="form-label">Телефон для связи</label>
+                  <input type="tel" id="admin-prof-phone" class="form-input" placeholder="+7 (999) 123-45-67">
+                </div>
+                <div class="form-group" style="flex:1;">
+                  <label class="form-label">Канал / портфолио в TG</label>
+                  <input type="text" id="admin-prof-channel" class="form-input" placeholder="https://t.me/youngyannniii">
+                </div>
+              </div>
+
+              <button id="btn-save-profile" class="btn-primary-large" style="height:46px; margin-top:8px;">
+                💾 Сохранить данные профиля
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Section 3: Manage Services -->
@@ -199,14 +332,6 @@
             </svg>
           </span>
           <span>Визиты</span>
-        </button>
-        <button class="tab" aria-label="Кабинет">
-          <span class="ico">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2l3 7h7l-5.5 4.5 2 7.5L12 17l-6.5 4 2-7.5L2 9h7z"></path>
-            </svg>
-          </span>
-          <span>Кабинет</span>
         </button>
       </div>
       <div class="glass thumb" id="thumb"><div class="lens" id="lens"></div></div>
@@ -363,6 +488,19 @@
           <button id="admin-save-photo-btn" class="btn-primary-large" style="flex:1; height:44px; font-size:14px;">Добавить</button>
           <button id="admin-close-photo-modal" class="btn-secondary" style="height:44px; font-size:14px;">Отмена</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MASTER LOGIN PIN MODAL (discreet, for browser demo/owner) -->
+  <div class="modal-overlay" id="pin-modal-overlay">
+    <div class="lightbox-content" style="max-width:340px; text-align:center;">
+      <h3 style="font-size:18px; font-weight:700;">Вход для мастера</h3>
+      <p style="font-size:13px; color:var(--text-sub);">Введите мастер-PIN для открытия кабинета управления:</p>
+      <input type="password" id="admin-pin-input" class="form-input" placeholder="PIN (по умолч. 7788)" style="text-align:center; font-size:18px; letter-spacing:4px;" maxlength="8">
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button id="admin-pin-submit-btn" class="btn-primary-large" style="flex:1; height:44px; font-size:14px;">Войти</button>
+        <button id="admin-pin-cancel-btn" class="btn-secondary" style="height:44px; font-size:14px;">Отмена</button>
       </div>
     </div>
   </div>

@@ -434,8 +434,9 @@ async function initApp() {
     // Apply Rebranding to DOM
     $("p-studio-name").textContent = config.studio_name || "Студия красоты";
     $("p-tagline").textContent = config.tagline || "";
-    $("p-avatar").src = config.avatar_url || "https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?w=400&q=80";
+    $("p-avatar").src = config.avatar_url || "/static/uploads/avatar.jpg";
     $("p-address").textContent = config.address + (config.address_hint ? ` (${config.address_hint})` : "");
+    if ($("p-rating-badge")) $("p-rating-badge").textContent = config.rating_text || "⭐ 4.98 (240+ отзывов)";
 
     const schedule = config.work_schedule || {};
     $("p-hours-badge").textContent = `🕒 ${schedule.start || "09:00"} – ${schedule.end || "21:00"}`;
@@ -461,6 +462,49 @@ async function initApp() {
     // Prefill client name if Telegram user is known
     if (config.current_user?.first_name) {
       $("client-name-input").value = config.current_user.first_name;
+    }
+
+    // Discreet 5-tap avatar to open master PIN entry (for browser presentation/demo)
+    let avClicks = 0, avTimer = null;
+    $("p-avatar").onclick = () => {
+      avClicks++;
+      clearTimeout(avTimer);
+      avTimer = setTimeout(() => { avClicks = 0; }, 1800);
+      if (avClicks >= 5) {
+        avClicks = 0;
+        $("pin-modal-overlay").classList.add("open");
+        $("admin-pin-input").value = "";
+        $("admin-pin-input").focus();
+      }
+    };
+
+    $("admin-pin-cancel-btn").onclick = () => $("pin-modal-overlay").classList.remove("open");
+    $("admin-pin-submit-btn").onclick = async () => {
+      const pin = $("admin-pin-input").value.trim();
+      try {
+        const res = await apiRequest("/api/admin/verify-pin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pin })
+        });
+        if (!res.ok) throw new Error("Неверный PIN");
+        state.isAdmin = true;
+        state.adminPIN = pin;
+        $("pin-modal-overlay").classList.remove("open");
+        enableAdminTab();
+        haptic("success");
+        showToast("Кабинет мастера открыт!");
+        target = 3;
+        setActiveTab(3);
+      } catch (e) {
+        haptic("error");
+        showToast("Неверный PIN-код мастера (по умолч. 7788)");
+      }
+    };
+
+    // If master is authenticated (via Telegram ID or dev param), enable master tab
+    if (state.isAdmin) {
+      enableAdminTab();
     }
 
     // Wire header master cabinet shortcut button
@@ -493,6 +537,15 @@ async function initApp() {
 }
 
 function enableAdminTab() {
+  if ($("btn-master-view")) {
+    $("btn-master-view").style.display = "inline-flex";
+    $("btn-master-view").onclick = () => {
+      haptic("medium");
+      target = 3;
+      setActiveTab(3);
+    };
+  }
+
   if (tabs.length >= 4) return;
   const adminBtn = document.createElement("button");
   adminBtn.className = "tab";
@@ -1104,15 +1157,165 @@ document.querySelectorAll(".admin-tab-btn").forEach((btn) => {
 
     $("admin-sec-schedule").style.display = target === "schedule" ? "block" : "none";
     $("admin-sec-slots").style.display = target === "slots" ? "block" : "none";
+    $("admin-sec-schedule-settings").style.display = target === "schedule-settings" ? "block" : "none";
+    $("admin-sec-profile").style.display = target === "profile" ? "block" : "none";
     $("admin-sec-services").style.display = target === "services" ? "block" : "none";
     $("admin-sec-portfolio").style.display = target === "portfolio" ? "block" : "none";
 
     if (target === "schedule") loadAdminSchedule();
     if (target === "slots") loadAdminBlockedSlots();
+    if (target === "schedule-settings") loadAdminScheduleSettings();
+    if (target === "profile") loadAdminProfileSettings();
     if (target === "services") renderAdminServices();
     if (target === "portfolio") renderAdminPortfolio();
   };
 });
+
+// Schedule Settings Manager
+function loadAdminScheduleSettings() {
+  const s = state.config?.work_schedule || {};
+  $("sched-start").value = s.start || "09:00";
+  $("sched-end").value = s.end || "21:00";
+  $("sched-step").value = String(s.step_minutes || 30);
+  $("sched-break-enabled").checked = s.break_enabled !== false;
+  $("sched-break-start").value = s.break_start || "13:30";
+  $("sched-break-end").value = s.break_end || "14:00";
+  $("sched-break-box").style.display = $("sched-break-enabled").checked ? "flex" : "none";
+
+  const wDays = s.working_days || [1, 2, 3, 4, 5, 6, 0];
+  document.querySelectorAll("#sched-days-bar button").forEach((btn) => {
+    const day = parseInt(btn.dataset.day);
+    btn.classList.toggle("active", wDays.includes(day));
+    btn.onclick = () => {
+      haptic("selection");
+      btn.classList.toggle("active");
+    };
+  });
+}
+
+$("sched-break-enabled").onchange = (e) => {
+  $("sched-break-box").style.display = e.target.checked ? "flex" : "none";
+};
+
+$("btn-save-schedule").onclick = async () => {
+  const selectedDays = [...document.querySelectorAll("#sched-days-bar button.active")].map((b) => parseInt(b.dataset.day));
+  if (selectedDays.length === 0) {
+    haptic("error");
+    return showToast("Выберите хотя бы один рабочий день!");
+  }
+
+  const payload = {
+    start: $("sched-start").value,
+    end: $("sched-end").value,
+    step_minutes: parseInt($("sched-step").value),
+    break_enabled: $("sched-break-enabled").checked,
+    break_start: $("sched-break-start").value,
+    break_end: $("sched-break-end").value,
+    working_days: selectedDays
+  };
+
+  try {
+    const res = await apiRequest("/api/admin/schedule-settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error("Failed");
+    const data = await res.json();
+    state.config.work_schedule = data.schedule;
+    $("p-hours-badge").textContent = `🕒 ${data.schedule.start} – ${data.schedule.end}`;
+    haptic("success");
+    showToast("График работы мастера сохранён!");
+  } catch (e) {
+    haptic("error");
+    showToast("Ошибка сохранения графика");
+  }
+};
+
+// Profile & Header Settings Manager
+function loadAdminProfileSettings() {
+  const c = state.config || {};
+  $("admin-prof-name").value = c.studio_name || "";
+  $("admin-prof-tagline").value = c.tagline || "";
+  $("admin-prof-rating").value = c.rating_text || "⭐ 4.98 (240+ отзывов)";
+  $("admin-prof-address").value = c.address || "";
+  $("admin-prof-hint").value = c.address_hint || "";
+  $("admin-prof-phone").value = c.phone || "";
+  $("admin-prof-channel").value = c.instagram_or_channel || "";
+  $("admin-prof-avatar-url").value = c.avatar_url || "";
+  $("admin-prof-avatar-img").src = c.avatar_url || "/static/uploads/avatar.jpg";
+}
+
+$("admin-avatar-file-input").onchange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    state.pendingAvatarBase64 = evt.target.result;
+    $("admin-prof-avatar-img").src = evt.target.result;
+    haptic("light");
+    showToast("Фото выбрано. Нажмите 'Сохранить данные профиля', чтобы применить!");
+  };
+  reader.readAsDataURL(file);
+};
+
+$("admin-prof-avatar-url").oninput = (e) => {
+  const url = e.target.value.trim();
+  if (url) $("admin-prof-avatar-img").src = url;
+};
+
+$("btn-save-profile").onclick = async () => {
+  const name = $("admin-prof-name").value.trim();
+  const address = $("admin-prof-address").value.trim();
+  if (!name || !address) {
+    haptic("error");
+    return showToast("Укажите имя мастера и адрес");
+  }
+
+  const payload = {
+    studio_name: name,
+    tagline: $("admin-prof-tagline").value.trim(),
+    rating_text: $("admin-prof-rating").value.trim(),
+    address: address,
+    address_hint: $("admin-prof-hint").value.trim(),
+    phone: $("admin-prof-phone").value.trim(),
+    instagram_or_channel: $("admin-prof-channel").value.trim(),
+    avatar_url: $("admin-prof-avatar-url").value.trim() || undefined,
+    avatar_base64: state.pendingAvatarBase64 || undefined
+  };
+
+  try {
+    const res = await apiRequest("/api/admin/profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error("Failed");
+    const data = await res.json();
+    const updated = data.config;
+    state.config = updated;
+    state.pendingAvatarBase64 = null;
+
+    // Live update Header in UI
+    $("p-studio-name").textContent = updated.studio_name;
+    $("p-tagline").textContent = updated.tagline;
+    $("p-avatar").src = updated.avatar_url;
+    $("admin-prof-avatar-img").src = updated.avatar_url;
+    $("admin-prof-avatar-url").value = updated.avatar_url;
+    if ($("p-rating-badge")) $("p-rating-badge").textContent = updated.rating_text || "⭐ 4.98 (240+ отзывов)";
+    $("p-address").textContent = updated.address + (updated.address_hint ? ` (${updated.address_hint})` : "");
+    if (updated.instagram_or_channel) {
+      $("p-channel-link").href = updated.instagram_or_channel;
+      $("p-channel-link").style.display = "inline-flex";
+    }
+
+    haptic("success");
+    showToast("Данные и фото шапки успешно сохранены!");
+  } catch (e) {
+    haptic("error");
+    showToast("Ошибка сохранения данных шапки");
+  }
+};
 
 async function loadAdminSchedule() {
   loadAdminStats();
