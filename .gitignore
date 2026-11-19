@@ -18,3 +18,10 @@ __pycache__/
 venv/
 *.sqlite3
 .DS_Store
+.env
+*.session
+*.session-journal
+__pycache__/
+venv/
+*.sqlite3
+.DS_Store
