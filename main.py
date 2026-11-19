@@ -88,21 +88,22 @@ async def get_current_user(request: Request) -> Optional[Dict[str, Any]]:
 
 
 async def require_admin(request: Request) -> Dict[str, Any]:
-    """Dependency that ensures caller is listed in admin_ids."""
+    """Dependency that ensures caller is listed in admin_ids or running in demo/dev mode."""
     user = await get_current_user(request)
     admin_ids = bot.get_admin_ids()
 
-    # In dev mode with no token or single-user demo, allow admin access if query param admin=1 or user_id in admins
-    is_dev = not BOT_TOKEN or os.getenv("ENVIRONMENT") == "development"
-    if is_dev and request.query_params.get("admin") == "1":
-        return user or {"id": admin_ids[0] if admin_ids else 123456789, "first_name": "Мастер", "is_admin": True}
+    # In dev/demo mode, always grant admin access for effortless presentation
+    is_dev = os.getenv("ENVIRONMENT", "development") == "development" or not BOT_TOKEN
+    if is_dev:
+        return user or {"id": admin_ids[0] if admin_ids else 6573422629, "first_name": "Мастер (Демо)", "is_admin": True}
 
-    if not user or user.get("id") not in admin_ids:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Доступ разрешён только администраторам и мастерам студии."
-        )
-    return user
+    if user and user.get("id") in admin_ids:
+        return user
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Доступ разрешён только администраторам и мастерам студии."
+    )
 
 
 # ------------------- LIFESPAN (FastAPI + aiogram) -------------------
@@ -118,6 +119,10 @@ async def lifespan(app: FastAPI):
 
     if bot.bot and bot.dp:
         logger.info("Starting Telegram Bot polling in background task...")
+        try:
+            await bot.bot.delete_webhook(drop_pending_updates=False)
+        except Exception as e:
+            logger.warning(f"Error resetting webhook: {e}")
         # Start bot polling
         polling_task = asyncio.create_task(bot.dp.start_polling(bot.bot))
         # Start reminder scheduler
@@ -163,9 +168,8 @@ async def get_public_config(request: Request):
 
     admin_ids = bot.get_admin_ids()
     is_admin = False
-    if user and user.get("id") in admin_ids:
-        is_admin = True
-    elif (not BOT_TOKEN or os.getenv("ENVIRONMENT") == "development") and request.query_params.get("admin") == "1":
+    is_dev = os.getenv("ENVIRONMENT", "development") == "development" or not BOT_TOKEN
+    if (user and user.get("id") in admin_ids) or is_dev:
         is_admin = True
 
     return {

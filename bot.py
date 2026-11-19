@@ -55,16 +55,18 @@ def get_admin_ids() -> List[int]:
 def get_main_keyboard() -> InlineKeyboardMarkup:
     config = db.get_config()
     studio_name = config.get("studio_name", "Студия красоты")
-    webapp_url = os.getenv("WEBAPP_URL", "http://localhost:8000").strip()
+    webapp_url = os.getenv("WEBAPP_URL", "").strip()
 
-    buttons = [
-        [
+    buttons = []
+    # Telegram strictly requires HTTPS for WebAppInfo; if http or empty, fallback to callbacks
+    if webapp_url and webapp_url.startswith("https://"):
+        buttons.append([
             InlineKeyboardButton(
                 text="✨ Записаться онлайн",
                 web_app=WebAppInfo(url=webapp_url)
             )
-        ],
-        [
+        ])
+        buttons.append([
             InlineKeyboardButton(
                 text="📋 Прайс и контакты",
                 callback_data="info_services"
@@ -73,13 +75,26 @@ def get_main_keyboard() -> InlineKeyboardMarkup:
                 text="🗓 Мои визиты",
                 web_app=WebAppInfo(url=f"{webapp_url}?tab=2")
             )
-        ]
-    ]
+        ])
+    else:
+        # Dev / Local mode fallback
+        buttons.append([
+            InlineKeyboardButton(
+                text="✨ Записаться (Прайс и выбор)",
+                callback_data="info_services"
+            )
+        ])
+        buttons.append([
+            InlineKeyboardButton(
+                text="📍 Адрес и контакты",
+                callback_data="info_contacts"
+            )
+        ])
 
     channel = config.get("instagram_or_channel")
-    if channel:
+    if channel and channel.startswith("http"):
         buttons.append([
-            InlineKeyboardButton(text="📷 Портфолио / Канал", url=channel)
+            InlineKeyboardButton(text="📷 Портфолио / Канал мастера", url=channel)
         ])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -130,16 +145,46 @@ if dp:
         if phone:
             lines.append(f"📞 <b>Телефон:</b> {phone}")
 
-        kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="✨ Выбрать время в приложении", web_app=WebAppInfo(url=os.getenv("WEBAPP_URL", "http://localhost:8000")))],
-            [InlineKeyboardButton(text="« Назад", callback_data="back_main")]
-        ])
+        webapp_url = os.getenv("WEBAPP_URL", "").strip()
+        nav_buttons = []
+        if webapp_url and webapp_url.startswith("https://"):
+            nav_buttons.append([InlineKeyboardButton(text="✨ Выбрать время в приложении", web_app=WebAppInfo(url=webapp_url))])
+        nav_buttons.append([InlineKeyboardButton(text="« Назад", callback_data="back_main")])
+
+        kb = InlineKeyboardMarkup(inline_keyboard=nav_buttons)
 
         await callback.message.edit_text(
             text="\n".join(lines),
             parse_mode="HTML",
             reply_markup=kb
         )
+        await callback.answer()
+
+
+    @dp.callback_query(F.data == "info_contacts")
+    async def handle_info_contacts(callback: CallbackQuery):
+        config = db.get_config()
+        studio = config.get("studio_name", "Бьюти-студия")
+        address = config.get("address", "")
+        hint = config.get("address_hint", "")
+        phone = config.get("phone", "")
+        channel = config.get("instagram_or_channel", "")
+        schedule = config.get("work_schedule", {})
+        hours = f"{schedule.get('start', '09:00')} – {schedule.get('end', '21:00')}"
+
+        text = (
+            f"📍 <b>Контакты {studio}:</b>\n\n"
+            f"Адрес: <b>{address}</b>\n"
+            f"{f'<i>Подсказка: {hint}</i>\n' if hint else ''}"
+            f"🕒 График работы: <b>ежедневно {hours}</b>\n"
+            f"{f'📞 Телефон: <b>{phone}</b>\n' if phone else ''}"
+            f"{f'📷 Портфолио: {channel}\n' if channel else ''}\n"
+            f"Для онлайн-записи откройте мини-приложение или напишите мастеру напрямую."
+        )
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="« Назад", callback_data="back_main")]
+        ])
+        await callback.message.edit_text(text=text, parse_mode="HTML", reply_markup=kb)
         await callback.answer()
 
 

@@ -30,9 +30,9 @@
   --pr: max(16px, env(safe-area-inset-right, 0px));
   --hh: 52px;
 
-  /* Tabbar sizing */
-  --tab-count: 3;
-  --tab-w: 273;
+  /* Tabbar sizing (4 tabs: Услуги, Портфолио, Визиты, Кабинет) */
+  --tab-count: 4;
+  --tab-w: 210;
   --bar-w: calc(var(--tab-count) * var(--tab-w) + 24);
 
   color-scheme: dark;

@@ -238,7 +238,7 @@ function switchView(i) {
   // Reload data for specific tabs
   if (i === 1) renderPortfolio();
   if (i === 2) loadClientVisits();
-  if (i === 3 && state.isAdmin) loadAdminSchedule();
+  if (i === 3) loadAdminSchedule();
 }
 
 function ptr(e) {
@@ -463,9 +463,14 @@ async function initApp() {
       $("client-name-input").value = config.current_user.first_name;
     }
 
-    // If Admin, enable 4th tab
-    if (state.isAdmin) {
-      enableAdminTab();
+    // Wire header master cabinet shortcut button
+    const btnMaster = $("btn-master-view");
+    if (btnMaster) {
+      btnMaster.onclick = () => {
+        haptic("medium");
+        target = 3;
+        setActiveTab(3);
+      };
     }
 
     // Load initial data
