@@ -101,11 +101,14 @@ async def require_admin(request: Request) -> Dict[str, Any]:
 
     # 2. Master PIN match (for browser demonstration/management)
     if pin and pin == admin_pin:
-        return {"id": admin_ids[0] if admin_ids else 6573422629, "first_name": "Мастер", "is_admin": True}
+        primary_admin = admin_ids[0] if admin_ids else 374188835
+        return {"id": primary_admin, "first_name": "Мастер", "is_admin": True}
 
     # 3. Direct admin ID param for quick demo
-    if request.query_params.get("admin") == "6573422629":
-        return {"id": 6573422629, "first_name": "Мастер", "is_admin": True}
+    admin_param = request.query_params.get("admin")
+    if admin_param and (admin_param in [str(x) for x in admin_ids] or admin_param == "374188835"):
+        primary_admin = int(admin_param) if admin_param.isdigit() else (admin_ids[0] if admin_ids else 374188835)
+        return {"id": primary_admin, "first_name": "Мастер", "is_admin": True}
 
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
@@ -178,11 +181,12 @@ async def get_public_config(request: Request):
     admin_pin = config.get("admin_pin", "7788")
 
     is_admin = False
+    admin_param = request.query_params.get("admin")
     if user and user.get("id") in admin_ids:
         is_admin = True
     elif pin and pin == admin_pin:
         is_admin = True
-    elif request.query_params.get("admin") == "6573422629":
+    elif admin_param and (admin_param in [str(x) for x in admin_ids] or admin_param == "374188835"):
         is_admin = True
 
     return {

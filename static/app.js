@@ -76,7 +76,7 @@ async function apiRequest(url, options = {}) {
   // Fallback for browser testing
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get("admin") === "1") {
-    headers["X-Dev-User-Id"] = "6573422629";
+    headers["X-Dev-User-Id"] = "374188835";
   }
   options.headers = headers;
   return fetch(url, options);
